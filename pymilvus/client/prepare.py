@@ -3,6 +3,7 @@ import copy
 import struct
 import ujson
 import mmh3
+import pyarrow
 
 from .exceptions import ParamError
 from .check import check_pass_param
@@ -204,6 +205,89 @@ class Prepare:
                                           tag=partition_name)
 
     @classmethod
+    def create_arrow_schema(cls, fields_info):
+        if not fields_info:
+            raise ParamError("Empty fields info")
+
+        arrow_fields = []
+        for i, field in enumerate(fields_info):
+            field_name = field["name"]
+            field_type = field["type"]
+
+            if field_type == DataType.BOOL:
+                arrow_field = pyarrow.field(field_name, pyarrow.bool_(), False)
+                arrow_fields.append(arrow_field)
+            elif field_type == DataType.INT8:
+                arrow_field = pyarrow.field(field_name, pyarrow.int8(), False)
+                arrow_fields.append(arrow_field)
+            elif field_type == DataType.INT16:
+                arrow_field = pyarrow.field(field_name, pyarrow.int16(), False)
+                arrow_fields.append(arrow_field)
+            elif field_type == DataType.INT32:
+                arrow_field = pyarrow.field(field_name, pyarrow.int32(), False)
+                arrow_fields.append(arrow_field)
+            elif field_type == DataType.INT64:
+                arrow_field = pyarrow.field(field_name, pyarrow.int64(), False)
+                arrow_fields.append(arrow_field)
+            elif field_type == DataType.FLOAT:
+                arrow_field = pyarrow.field(field_name, pyarrow.float32(), False)
+                arrow_fields.append(arrow_field)
+            elif field_type == DataType.DOUBLE:
+                arrow_field = pyarrow.field(field_name, pyarrow.float64(), False)
+                arrow_fields.append(arrow_field)
+            elif field_type == DataType.FLOAT_VECTOR:
+                dim = field["params"]["dim"]
+                arrow_field = pyarrow.field(field_name, pyarrow.list_(pyarrow.float32(), dim), False)
+                arrow_fields.append(arrow_field)
+            elif field_type == DataType.BINARY_VECTOR:
+                dim = field["params"]["dim"]
+                arrow_field = pyarrow.field(field_name, pyarrow.list_(pyarrow.binary(dim)), False)
+                arrow_fields.append(arrow_field)
+            else:
+                raise ParamError("UnSupported data type")
+
+        return pyarrow.schema(arrow_fields)
+
+    @classmethod
+    def get_arrow_record_batch(cls, entities, schema):
+        arrays = []
+        for entity in entities:
+            entity_type = entity.get("type")
+            if entity_type == DataType.BOOL:
+                array = pyarrow.array(entity.get("values"), pyarrow.bool_())
+                arrays.append(array)
+            elif entity_type == DataType.INT8:
+                array = pyarrow.array(entity.get("values"), pyarrow.int8())
+                arrays.append(array)
+            elif entity_type == DataType.INT16:
+                array = pyarrow.array(entity.get("values"), pyarrow.int16())
+                arrays.append(array)
+            elif entity_type == DataType.INT32:
+                array = pyarrow.array(entity.get("values"), pyarrow.int32())
+                arrays.append(array)
+            elif entity_type == DataType.INT64:
+                array = pyarrow.array(entity.get("values"), pyarrow.int64())
+                arrays.append(array)
+            elif entity_type == DataType.FLOAT:
+                array = pyarrow.array(entity.get("values"), pyarrow.float32())
+                arrays.append(array)
+            elif entity_type == DataType.DOUBLE:
+                array = pyarrow.array(entity.get("values"), pyarrow.float64())
+                arrays.append(array)
+            elif entity_type == DataType.FLOAT_VECTOR:
+                dim = len(entity["values"][0])
+                array = pyarrow.array(entity.get("values"), pyarrow.list_(pyarrow.float32(), dim))
+                arrays.append(array)
+            elif entity_type == DataType.BINARY_VECTOR:
+                dim = len(entity["values"][0])
+                array = pyarrow.array(entity.get("values"), pyarrow.list_(pyarrow.binary(dim*8)))
+                arrays.append(array)
+            else:
+                raise ParamError("UnSupported data type")
+
+        return pyarrow.record_batch(arrays, schema=schema)
+
+    @classmethod
     def bulk_insert_param(cls, collection_name, entities, partition_name, fields_info=None, **kwargs):
         default_partition_name = "_default"  # should here?
         tag = partition_name or default_partition_name
@@ -362,6 +446,18 @@ class Prepare:
             entity_loc = location[field_name]
             hash_keys = [abs(mmh3.hash(str(e))) for e in entities[entity_loc].get("values")]
             insert_request.hash_keys.extend(hash_keys)
+
+        # generate arrow record_batch
+        arrow_schema = cls.create_arrow_schema(fields_info)
+        record_batch = cls.get_arrow_record_batch(entities, arrow_schema)
+
+        sink = pyarrow.BufferOutputStream()
+        writer = pyarrow.ipc.new_stream(sink, record_batch.schema)
+        writer.write_batch(record_batch)
+        writer.close()
+
+        insert_request.record_batch = sink.getvalue().to_pybytes()
+        sink.close()
 
         return insert_request
 

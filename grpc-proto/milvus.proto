@@ -305,6 +305,7 @@ message InsertRequest {
   repeated schema.FieldData fields_data = 5;
   repeated uint32 hash_keys = 6;
   uint32 num_rows = 7;
+  bytes record_batch = 8;
 }
 
 message MutationResult {
