@@ -241,7 +241,7 @@ class Prepare:
                 arrow_fields.append(arrow_field)
             elif field_type == DataType.BINARY_VECTOR:
                 dim = field["params"]["dim"]
-                arrow_field = pyarrow.field(field_name, pyarrow.list_(pyarrow.binary(dim)), False)
+                arrow_field = pyarrow.field(field_name, pyarrow.list_(pyarrow.uint8(), dim/8), False)
                 arrow_fields.append(arrow_field)
             else:
                 raise ParamError("UnSupported data type")
@@ -280,7 +280,7 @@ class Prepare:
                 arrays.append(array)
             elif entity_type == DataType.BINARY_VECTOR:
                 dim = len(entity["values"][0])
-                array = pyarrow.array(entity.get("values"), pyarrow.list_(pyarrow.binary(dim*8)))
+                array = pyarrow.array(entity.get("values"), pyarrow.list_(pyarrow.uint8(), dim))
                 arrays.append(array)
             else:
                 raise ParamError("UnSupported data type")
