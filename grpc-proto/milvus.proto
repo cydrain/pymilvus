@@ -302,17 +302,16 @@ message InsertRequest {
   string db_name = 2;
   string collection_name = 3;
   string partition_name = 4;
-  repeated schema.FieldData fields_data = 5;
+  bytes record_batch = 5;
   repeated uint32 hash_keys = 6;
-  uint32 num_rows = 7;
-  bytes record_batch = 8;
+  int64 num_rows = 7;
 }
 
 message MutationResult {
   common.Status status = 1;
   schema.IDs IDs = 2; // required for insert, delete
-  repeated uint32 succ_index = 3; // error indexes indicate
-  repeated uint32 err_index = 4; // error indexes indicate
+  repeated int64 succ_index = 3; // error indexes indicate
+  repeated int64 err_index = 4; // error indexes indicate
   bool acknowledged = 5;
   int64 insert_cnt = 6;
   int64 delete_cnt = 7;

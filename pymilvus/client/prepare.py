@@ -315,6 +315,7 @@ class Prepare:
 
             if field.get("auto_id", False):
                 auto_id_loc = i
+                raise ParamError("auto_id not supported")
                 continue
 
             match_flag = False
@@ -362,83 +363,83 @@ class Prepare:
         if auto_id_loc is not None and len(entities) + 1 != len(fields_info):
             raise ParamError(f"number of fields: {len(fields_info)}, number of entities: {len(entities)}")
 
-        row_num = 0
-
-        for entity in entities:
-            field_data = schema_types.FieldData()
-            if entity.get("type") in (DataType.BOOL,):
-                field_data.type = schema_types.DataType.Value("Bool")
-                field_data.field_name = entity.get("name")
-                field_data.scalars.bool_data.data.extend(entity.get("values"))
-                if row_num != 0 and row_num != len(entity.get("values")):
-                    raise ParamError("row num of all fields is not different")
-                row_num = len(entity.get("values"))
-            elif entity.get("type") in (DataType.INT8,):
-                field_data.type = schema_types.DataType.Value("Int8")
-                field_data.field_name = entity.get("name")
-                field_data.scalars.int_data.data.extend(entity.get("values"))
-                if row_num != 0 and row_num != len(entity.get("values")):
-                    raise ParamError("row num of all fields is not different")
-                row_num = len(entity.get("values"))
-            elif entity.get("type") in (DataType.INT16,):
-                field_data.type = schema_types.DataType.Value("Int16")
-                field_data.field_name = entity.get("name")
-                field_data.scalars.int_data.data.extend(entity.get("values"))
-                if row_num != 0 and row_num != len(entity.get("values")):
-                    raise ParamError("row num of all fields is not different")
-                row_num = len(entity.get("values"))
-            elif entity.get("type") in (DataType.INT32,):
-                field_data.type = schema_types.DataType.Value("Int32")
-                field_data.field_name = entity.get("name")
-                field_data.scalars.int_data.data.extend(entity.get("values"))
-                if row_num != 0 and row_num != len(entity.get("values")):
-                    raise ParamError("row num of all fields is not different")
-                row_num = len(entity.get("values"))
-            elif entity.get("type") in (DataType.INT64,):
-                field_data.type = schema_types.DataType.Value("Int64")
-                field_data.field_name = entity.get("name")
-                field_data.scalars.long_data.data.extend(entity.get("values"))
-                if row_num != 0 and row_num != len(entity.get("values")):
-                    raise ParamError("row num of all fields is not different")
-                row_num = len(entity.get("values"))
-            elif entity.get("type") in (DataType.FLOAT,):
-                field_data.type = schema_types.DataType.Value("Float")
-                field_data.field_name = entity.get("name")
-                field_data.scalars.float_data.data.extend(entity.get("values"))
-                if row_num != 0 and row_num != len(entity.get("values")):
-                    raise ParamError("row num of all fields is not different")
-                row_num = len(entity.get("values"))
-            elif entity.get("type") in (DataType.DOUBLE,):
-                field_data.type = schema_types.DataType.Value("Double")
-                field_data.field_name = entity.get("name")
-                field_data.scalars.double_data.data.extend(entity.get("values"))
-                if row_num != 0 and row_num != len(entity.get("values")):
-                    raise ParamError("row num of all fields is not different")
-                row_num = len(entity.get("values"))
-            elif entity.get("type") in (DataType.FLOAT_VECTOR,):
-                field_data.type = schema_types.DataType.Value("FloatVector")
-                field_data.field_name = entity.get("name")
-                field_data.vectors.dim = len(entity.get("values")[0])
-                if row_num != 0 and row_num != len(entity.get("values")):
-                    raise ParamError("row num of all fields is not different")
-                row_num = len(entity.get("values"))
-                all_floats = [f for vector in entity.get("values") for f in vector]
-                field_data.vectors.float_vector.data.extend(all_floats)
-            elif entity.get("type") in (DataType.BINARY_VECTOR,):
-                field_data.type = schema_types.DataType.Value("BinaryVector")
-                field_data.field_name = entity.get("name")
-                if row_num != 0 and row_num != len(entity.get("values")):
-                    raise ParamError("row num of all fields is not different")
-                row_num = len(entity.get("values"))
-                field_data.vectors.dim = len(entity.get("values")[0]) * 8
-                for vector in entity.get("values"):
-                    field_data.vectors.binary_vector += vector
-            else:
-                raise ParamError("UnSupported data type")
-
-            insert_request.fields_data.append(field_data)
-
-        insert_request.num_rows = row_num
+        # row_num = 0
+        #
+        # for entity in entities:
+        #     field_data = schema_types.FieldData()
+        #     if entity.get("type") in (DataType.BOOL,):
+        #         field_data.type = schema_types.DataType.Value("Bool")
+        #         field_data.field_name = entity.get("name")
+        #         field_data.scalars.bool_data.data.extend(entity.get("values"))
+        #         if row_num != 0 and row_num != len(entity.get("values")):
+        #             raise ParamError("row num of all fields is not different")
+        #         row_num = len(entity.get("values"))
+        #     elif entity.get("type") in (DataType.INT8,):
+        #         field_data.type = schema_types.DataType.Value("Int8")
+        #         field_data.field_name = entity.get("name")
+        #         field_data.scalars.int_data.data.extend(entity.get("values"))
+        #         if row_num != 0 and row_num != len(entity.get("values")):
+        #             raise ParamError("row num of all fields is not different")
+        #         row_num = len(entity.get("values"))
+        #     elif entity.get("type") in (DataType.INT16,):
+        #         field_data.type = schema_types.DataType.Value("Int16")
+        #         field_data.field_name = entity.get("name")
+        #         field_data.scalars.int_data.data.extend(entity.get("values"))
+        #         if row_num != 0 and row_num != len(entity.get("values")):
+        #             raise ParamError("row num of all fields is not different")
+        #         row_num = len(entity.get("values"))
+        #     elif entity.get("type") in (DataType.INT32,):
+        #         field_data.type = schema_types.DataType.Value("Int32")
+        #         field_data.field_name = entity.get("name")
+        #         field_data.scalars.int_data.data.extend(entity.get("values"))
+        #         if row_num != 0 and row_num != len(entity.get("values")):
+        #             raise ParamError("row num of all fields is not different")
+        #         row_num = len(entity.get("values"))
+        #     elif entity.get("type") in (DataType.INT64,):
+        #         field_data.type = schema_types.DataType.Value("Int64")
+        #         field_data.field_name = entity.get("name")
+        #         field_data.scalars.long_data.data.extend(entity.get("values"))
+        #         if row_num != 0 and row_num != len(entity.get("values")):
+        #             raise ParamError("row num of all fields is not different")
+        #         row_num = len(entity.get("values"))
+        #     elif entity.get("type") in (DataType.FLOAT,):
+        #         field_data.type = schema_types.DataType.Value("Float")
+        #         field_data.field_name = entity.get("name")
+        #         field_data.scalars.float_data.data.extend(entity.get("values"))
+        #         if row_num != 0 and row_num != len(entity.get("values")):
+        #             raise ParamError("row num of all fields is not different")
+        #         row_num = len(entity.get("values"))
+        #     elif entity.get("type") in (DataType.DOUBLE,):
+        #         field_data.type = schema_types.DataType.Value("Double")
+        #         field_data.field_name = entity.get("name")
+        #         field_data.scalars.double_data.data.extend(entity.get("values"))
+        #         if row_num != 0 and row_num != len(entity.get("values")):
+        #             raise ParamError("row num of all fields is not different")
+        #         row_num = len(entity.get("values"))
+        #     elif entity.get("type") in (DataType.FLOAT_VECTOR,):
+        #         field_data.type = schema_types.DataType.Value("FloatVector")
+        #         field_data.field_name = entity.get("name")
+        #         field_data.vectors.dim = len(entity.get("values")[0])
+        #         if row_num != 0 and row_num != len(entity.get("values")):
+        #             raise ParamError("row num of all fields is not different")
+        #         row_num = len(entity.get("values"))
+        #         all_floats = [f for vector in entity.get("values") for f in vector]
+        #         field_data.vectors.float_vector.data.extend(all_floats)
+        #     elif entity.get("type") in (DataType.BINARY_VECTOR,):
+        #         field_data.type = schema_types.DataType.Value("BinaryVector")
+        #         field_data.field_name = entity.get("name")
+        #         if row_num != 0 and row_num != len(entity.get("values")):
+        #             raise ParamError("row num of all fields is not different")
+        #         row_num = len(entity.get("values"))
+        #         field_data.vectors.dim = len(entity.get("values")[0]) * 8
+        #         for vector in entity.get("values"):
+        #             field_data.vectors.binary_vector += vector
+        #     else:
+        #         raise ParamError("UnSupported data type")
+        #
+        #     insert_request.fields_data.append(field_data)
+        #
+        # insert_request.num_rows = row_num
 
         # generate hash keys, TODO: better hash function
         if not fields_info[primary_key_loc].get("auto_id", False):
@@ -458,6 +459,8 @@ class Prepare:
 
         insert_request.record_batch = sink.getvalue().to_pybytes()
         sink.close()
+
+        insert_request.num_rows = record_batch.num_rows
 
         return insert_request
 
